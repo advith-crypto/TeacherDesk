@@ -102,6 +102,7 @@ export default function Settings() {
   const settings = useQuery(api.profiles.getSettings);
   const saveProfile = useMutation(api.profiles.saveProfile);
   const saveTheme = useMutation(api.profiles.saveTheme);
+  const clearMyData = useMutation(api.profiles.clearMyData);
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
 
@@ -233,7 +234,7 @@ export default function Settings() {
     setDeleteBusy(true);
     try {
       // Remove profile + tasks first so the deleted user leaves no orphan data.
-      await clearMyData();
+      await clearMyData({});
       // Sign out locally. The auth row itself is cleaned up by the platform.
       await signOut();
       toast.success("Account data deleted");
