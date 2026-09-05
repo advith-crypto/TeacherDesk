@@ -81,6 +81,49 @@ export const saveProfile = mutation({
   },
 });
 
+/**
+ * Delete every TeacherDesk record owned by the current user (profile, tasks,
+ * subtasks, activity history, and settings). Used by "Delete account data".
+ */
+export const clearMyData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const task of tasks) {
+      const subs = await ctx.db
+        .query("subtasks")
+        .withIndex("by_task", (q) => q.eq("taskId", task._id))
+        .collect();
+      for (const s of subs) await ctx.db.delete(s._id);
+      await ctx.db.delete(task._id);
+    }
+
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const a of activities) await ctx.db.delete(a._id);
+
+    const profile = await ctx.db
+      .query("teacherProfiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (profile) await ctx.db.delete(profile._id);
+
+    const settings = await ctx.db
+      .query("userSettings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (settings) await ctx.db.delete(settings._id);
+  },
+});
+
 /** Per-user app settings: theme preference. */
 export const getSettings = query({
   args: {},

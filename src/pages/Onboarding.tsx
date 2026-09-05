@@ -9,9 +9,10 @@ import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { markOnboardingSkipped } from "@/components/RequireAuth";
 
 /** Chip-based tag input for subjects and classes. */
-function TagInput({
+export function TagInput({
   label,
   hint,
   values,
@@ -152,7 +153,18 @@ export default function Onboarding() {
           </p>
         </div>
 
-        <form onSubmit={handleSave} className="card-soft flex flex-col gap-5 p-5">
+        <button
+          type="button"
+          onClick={() => {
+            markOnboardingSkipped();
+            navigate("/dashboard", { replace: true });
+          }}
+          className="mx-auto block text-sm text-muted-foreground underline-offset-2 hover:underline"
+        >
+          Skip for now
+        </button>
+
+        <form onSubmit={handleSave} className="card-soft mt-4 flex flex-col gap-5 p-5">
           <div className="grid gap-1.5">
             <Label htmlFor="ob-name">Full name</Label>
             <Input

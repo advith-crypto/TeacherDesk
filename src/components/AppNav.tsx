@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { CreateTaskDialog } from "./CreateTaskDialog";
+import { CreateTaskDialog } from "./TaskFormDialog";
 
 type NavItem = {
   to: string;

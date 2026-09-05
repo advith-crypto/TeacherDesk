@@ -28,7 +28,7 @@ function resolveRedirectAfterAuth(returnTo: string | null, fallback = "/dashboar
 }
 
 function Auth({ redirectAfterAuth }: AuthProps = {}) {
-  const { isLoading: authLoading, isAuthenticated, signIn } = useAuthState();
+  const { isAuthLoading: authLoading, isAuthenticated, signIn } = useAuthState();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = resolveRedirectAfterAuth(
