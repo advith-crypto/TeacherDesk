@@ -72,8 +72,8 @@ const schema = defineSchema({
   activities: defineTable({
     userId: v.id("users"),
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
-    entityType: v.string(), // task | subtask | profile | account
-    entityId: v.optional(v.id("tasks")),
+    entityType: v.string(), // task | subtask | profile | account | lesson
+    entityId: v.optional(v.union(v.id("tasks"), v.id("lessons"))),
     summary: v.string(),
   }).index("by_user", ["userId"]), // _creationTime ordering is implicit
 
@@ -84,6 +84,32 @@ const schema = defineSchema({
     userId: v.id("users"),
     theme: v.optional(v.string()), // "light" | "dark" | "system"
   }).index("by_user", ["userId"]),
+
+  /**
+   * Lessons — Phase 2A Lesson Planner. Every row carries userId for strict
+   * ownership isolation, following the tasks table conventions.
+   */
+  lessons: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    subject: v.string(),
+    classGrade: v.string(),
+    section: v.optional(v.string()),
+    topic: v.string(),
+    lessonDate: v.string(), // "YYYY-MM-DD"
+    durationMinutes: v.optional(v.number()),
+    objectives: v.optional(v.string()),
+    teachingActivities: v.optional(v.string()),
+    materials: v.optional(v.string()),
+    homework: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    status: v.string(), // "planned" | "in_progress" | "completed"
+    priority: v.string(), // "low" | "medium" | "high"
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_date", ["userId", "lessonDate"]),
 });
 
 export default schema;

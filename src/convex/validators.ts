@@ -47,3 +47,42 @@ export const subtaskToggleValidator = v.object({
   taskId: v.id("tasks"),
   subtaskId: v.id("subtasks"),
 });
+
+// --- Lessons (Phase 2A) ---
+
+export const LESSON_STATUS_VALUES = ["planned", "in_progress", "completed"] as const;
+export const LESSON_PRIORITY_VALUES = ["low", "medium", "high"] as const;
+
+export const lessonInputValidator = v.object({
+  title: v.string(),
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  topic: v.string(),
+  lessonDate: v.string(), // "YYYY-MM-DD"
+  durationMinutes: v.optional(v.number()),
+  objectives: v.optional(v.string()),
+  teachingActivities: v.optional(v.string()),
+  materials: v.optional(v.string()),
+  homework: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  status: v.string(),
+  priority: v.string(),
+});
+
+export const lessonUpdateValidator = v.object({
+  title: v.optional(v.string()),
+  subject: v.optional(v.string()),
+  classGrade: v.optional(v.string()),
+  section: v.optional(v.nullable(v.string())),
+  topic: v.optional(v.string()),
+  lessonDate: v.optional(v.string()),
+  durationMinutes: v.optional(v.nullable(v.number())),
+  objectives: v.optional(v.nullable(v.string())),
+  teachingActivities: v.optional(v.nullable(v.string())),
+  materials: v.optional(v.nullable(v.string())),
+  homework: v.optional(v.nullable(v.string())),
+  notes: v.optional(v.nullable(v.string())),
+  status: v.optional(v.string()),
+  priority: v.optional(v.string()),
+});

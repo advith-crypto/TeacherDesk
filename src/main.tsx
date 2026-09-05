@@ -17,6 +17,7 @@ const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Onboarding = lazy(() => import("./pages/Onboarding.tsx"));
 const TasksPage = lazy(() => import("./pages/Tasks.tsx"));
 const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
+const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon.tsx"));
 
 // Simple loading fallback for route transitions
@@ -171,10 +172,7 @@ createRoot(document.getElementById("root")!).render(
                 path="/lessons"
                 element={
                   <RequireAuth>
-                    <ComingSoon
-                      title="Lessons"
-                      description="Plan lessons around your subjects and classes, and attach them to your daily tasks."
-                    />
+                    <LessonsPage />
                   </RequireAuth>
                 }
               />
