@@ -26,16 +26,20 @@ export default function Lessons() {
   const [detailLesson, setDetailLesson] = useState<LessonItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  // Support /lessons?new=1 from dashboard quick actions. Lazy initial state
-  // reads the URL once at mount; no effect needed.
-  const [createOpen, setCreateOpen] = useState(() => {
-    if (searchParams.get("new") === "1") {
-      searchParams.delete("new");
-      setSearchParams(searchParams, { replace: true });
-      return true;
-    }
-    return false;
-  });
+  // Support /lessons?new=1 from dashboard quick actions. The URL is the source
+  // of truth: "Plan lesson" actions set the ?new=1 param, and closing the dialog
+  // strips it. Fully derived state — no effects, no render-phase navigation.
+  const createOpen = searchParams.get("new") === "1";
+  const openCreate = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("new", "1");
+    setSearchParams(next, { replace: true });
+  };
+  const closeCreate = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("new");
+    setSearchParams(next, { replace: true });
+  };
 
   const today = useMemo(() => {
     const d = new Date();
@@ -79,7 +83,7 @@ export default function Lessons() {
             </div>
             <Button
               className="hidden h-11 gap-2 md:inline-flex"
-              onClick={() => setCreateOpen(true)}
+              onClick={openCreate}
             >
               <Plus className="size-4" />
               Plan lesson
@@ -137,7 +141,7 @@ export default function Lessons() {
                   filters.priority !== "all" ||
                   filters.period !== "all"
                 }
-                onAdd={() => setCreateOpen(true)}
+                onAdd={openCreate}
                 onClear={() => setFilters(DEFAULT_LESSON_FILTERS)}
               />
             ) : (
@@ -151,7 +155,7 @@ export default function Lessons() {
 
       {/* Mobile FAB */}
       <button
-        onClick={() => setCreateOpen(true)}
+        onClick={openCreate}
         aria-label="Plan lesson"
         className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 active:scale-95 md:hidden"
       >
@@ -163,7 +167,10 @@ export default function Lessons() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
-      <CreateLessonDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateLessonDialog
+        open={createOpen}
+        onOpenChange={(o) => (o ? openCreate() : closeCreate())}
+      />
     </div>
   );
 }

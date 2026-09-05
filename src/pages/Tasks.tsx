@@ -27,17 +27,21 @@ export default function Tasks() {
   const [filters, setFilters] = useState<TaskFilterState>(DEFAULT_FILTERS);
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  // Support /tasks?new=1 from quick actions. Lazy initial state reads the URL
-  // once at mount (a pure external read, allowed in lazy state init); the
-  // dialog component handles opening from there without an effect.
-  const [createOpen, setCreateOpen] = useState(() => {
-    if (searchParams.get("new") === "1") {
-      searchParams.delete("new");
-      setSearchParams(searchParams, { replace: true });
-      return true;
-    }
-    return false;
-  });
+
+  // Support /tasks?new=1 from quick actions. The URL is the source of truth:
+  // "Plan/Add" actions set the ?new=1 param, and closing the dialog strips it.
+  // Fully derived state — no effects, no render-phase navigation.
+  const createOpen = searchParams.get("new") === "1";
+  const openCreate = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("new", "1");
+    setSearchParams(next, { replace: true });
+  };
+  const closeCreate = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("new");
+    setSearchParams(next, { replace: true });
+  };
 
   const visible = useMemo(() => {
     const all = tasks ?? [];
@@ -116,7 +120,7 @@ export default function Tasks() {
                   : `${visible.length} ${visible.length === 1 ? "task" : "tasks"}${filters.search ? " matching" : ""}`}
               </p>
             </div>
-            <Button className="hidden h-11 gap-2 md:inline-flex" onClick={() => setCreateOpen(true)}>
+            <Button className="hidden h-11 gap-2 md:inline-flex" onClick={openCreate}>
               <Plus className="size-4" />
               New task
             </Button>
@@ -136,7 +140,7 @@ export default function Tasks() {
             ) : visible.length === 0 ? (
               <EmptyState
                 hasTasks={(tasks ?? []).length > 0}
-                onAdd={() => setCreateOpen(true)}
+                onAdd={openCreate}
               />
             ) : (
               groups.map((g) => (
@@ -159,7 +163,7 @@ export default function Tasks() {
 
       {/* Mobile FAB */}
       <button
-        onClick={() => setCreateOpen(true)}
+        onClick={openCreate}
         aria-label="Add task"
         className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 active:scale-95 md:hidden"
       >
@@ -171,7 +175,7 @@ export default function Tasks() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
-      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateTaskDialog open={createOpen} onOpenChange={(o) => (o ? openCreate() : closeCreate())} />
     </div>
   );
 }

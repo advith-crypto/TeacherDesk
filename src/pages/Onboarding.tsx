@@ -98,13 +98,14 @@ export default function Onboarding() {
 
   // Prefill from profile if editing, else from auth user name. Data arrives
   // async from Convex, so adjust state during render when the source changes
-  // (React-recommended pattern; no cascading effect).
+  // (React-recommended pattern; no cascading effect). The null sentinel makes
+  // this run once on mount, mirroring the previous effect's mount behavior.
   const userName = user?.name;
   const [prevSource, setPrevSource] = useState<{
     profile: typeof profile;
     userName: string | undefined;
-  }>({ profile, userName });
-  if (prevSource.profile !== profile || prevSource.userName !== userName) {
+  } | null>(null);
+  if (prevSource === null || prevSource.profile !== profile || prevSource.userName !== userName) {
     setPrevSource({ profile, userName });
     if (profile) {
       setFullName(profile.fullName ?? userName ?? "");
@@ -114,7 +115,7 @@ export default function Onboarding() {
       setGrades(profile.grades ?? []);
       setWorkStart(profile.workStartTime ?? "09:00");
       setWorkEnd(profile.workEndTime ?? "17:00");
-    } else if (userName && !prevSource.userName) {
+    } else if (userName) {
       setFullName(userName);
     }
   }
