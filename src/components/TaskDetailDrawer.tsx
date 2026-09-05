@@ -17,7 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { EditTaskDialog } from "./TaskFormDialog";
 import { friendlyDate } from "@/lib/attention";
-import { STATUS_LABELS, PRIORITY_LABELS, STATUSES, PRIORITIES, CATEGORY_LABELS, type Status, type Priority } from "@/lib/tasks-shared";
+import { STATUS_LABELS, PRIORITY_LABELS, STATUSES, PRIORITIES, CATEGORY_LABELS } from "@/lib/tasks-shared";
 import { useTaskMutations, type TaskItem } from "@/hooks/use-tasks";
 import {
   Calendar,
@@ -60,7 +60,6 @@ export function TaskDetailDrawer({
   const isCompleted = task.status === "completed";
 
   const handleDelete = async () => {
-    const title = task.title;
     await deleteTask(task._id);
     setConfirmDelete(false);
     onOpenChange(false);

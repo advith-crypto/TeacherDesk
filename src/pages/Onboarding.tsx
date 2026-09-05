@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-tasks";
 import { GraduationCap, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -96,20 +96,28 @@ export default function Onboarding() {
   const [workEnd, setWorkEnd] = useState("17:00");
   const [saving, setSaving] = useState(false);
 
-  // Prefill from profile if editing, else from auth user name.
-  useEffect(() => {
+  // Prefill from profile if editing, else from auth user name. Data arrives
+  // async from Convex, so adjust state during render when the source changes
+  // (React-recommended pattern; no cascading effect).
+  const userName = user?.name;
+  const [prevSource, setPrevSource] = useState<{
+    profile: typeof profile;
+    userName: string | undefined;
+  }>({ profile, userName });
+  if (prevSource.profile !== profile || prevSource.userName !== userName) {
+    setPrevSource({ profile, userName });
     if (profile) {
-      setFullName(profile.fullName ?? user?.name ?? "");
+      setFullName(profile.fullName ?? userName ?? "");
       setSchoolName(profile.schoolName ?? "");
       setBoard(profile.board ?? "");
       setSubjects(profile.subjects ?? []);
       setGrades(profile.grades ?? []);
       setWorkStart(profile.workStartTime ?? "09:00");
       setWorkEnd(profile.workEndTime ?? "17:00");
-    } else if (user?.name) {
-      setFullName(user.name);
+    } else if (userName && !prevSource.userName) {
+      setFullName(userName);
     }
-  }, [profile, user?.name]);
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

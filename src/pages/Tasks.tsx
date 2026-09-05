@@ -1,7 +1,7 @@
 import { MobileNav, DesktopNav } from "@/components/AppNav";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
-import { TaskFormDialog, CreateTaskDialog } from "@/components/TaskFormDialog";
+import { CreateTaskDialog } from "@/components/TaskFormDialog";
 import {
   DEFAULT_FILTERS,
   TaskFilters,
@@ -16,8 +16,8 @@ import {
 } from "@/lib/attention";
 import { PRIORITY_RANK, type Priority } from "@/lib/tasks-shared";
 import { useTasks, type TaskItem } from "@/hooks/use-tasks";
-import { CircleCheck, ListChecks, Plus, SearchX } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ListChecks, Plus, SearchX } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 export default function Tasks() {
@@ -27,16 +27,17 @@ export default function Tasks() {
   const [filters, setFilters] = useState<TaskFilterState>(DEFAULT_FILTERS);
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-
-  // Support /tasks?new=1 from quick actions.
-  useEffect(() => {
+  // Support /tasks?new=1 from quick actions. Lazy initial state reads the URL
+  // once at mount (a pure external read, allowed in lazy state init); the
+  // dialog component handles opening from there without an effect.
+  const [createOpen, setCreateOpen] = useState(() => {
     if (searchParams.get("new") === "1") {
-      setCreateOpen(true);
       searchParams.delete("new");
       setSearchParams(searchParams, { replace: true });
+      return true;
     }
-  }, [searchParams, setSearchParams]);
+    return false;
+  });
 
   const visible = useMemo(() => {
     const all = tasks ?? [];

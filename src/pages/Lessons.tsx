@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   DEFAULT_LESSON_FILTERS,
   filterLessons,
-  lessonAttentionReasons,
   lessonSummaryCounts,
   sortLessons,
   uniqueValues,
@@ -16,7 +15,7 @@ import {
 } from "@/lib/lessons-shared";
 import { useLessons, type LessonItem } from "@/hooks/use-lessons";
 import { BookOpen, Plus, SearchX } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 export default function Lessons() {
@@ -26,16 +25,17 @@ export default function Lessons() {
   const [filters, setFilters] = useState<LessonFilterState>(DEFAULT_LESSON_FILTERS);
   const [detailLesson, setDetailLesson] = useState<LessonItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
 
-  // Support /lessons?new=1 from dashboard quick actions.
-  useEffect(() => {
+  // Support /lessons?new=1 from dashboard quick actions. Lazy initial state
+  // reads the URL once at mount; no effect needed.
+  const [createOpen, setCreateOpen] = useState(() => {
     if (searchParams.get("new") === "1") {
-      setCreateOpen(true);
       searchParams.delete("new");
       setSearchParams(searchParams, { replace: true });
+      return true;
     }
-  }, [searchParams, setSearchParams]);
+    return false;
+  });
 
   const today = useMemo(() => {
     const d = new Date();

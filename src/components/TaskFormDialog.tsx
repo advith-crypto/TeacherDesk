@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, CATEGORY_LABELS, PRIORITIES, PRIORITY_LABELS, STATUSES, STATUS_LABELS } from "@/lib/tasks-shared";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTaskMutations } from "@/hooks/use-tasks";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TaskItem } from "@/hooks/use-tasks";
@@ -49,7 +49,11 @@ export function TaskFormDialog({ open, onOpenChange, task, defaults, onSaved }: 
   const [newSub, setNewSub] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Reset form fields whenever the dialog transitions to open — the guarded
+  // render-time adjustment pattern recommended by React (no cascading effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setTitle(task?.title ?? "");
       setDescription(task?.description ?? "");
@@ -62,7 +66,7 @@ export function TaskFormDialog({ open, onOpenChange, task, defaults, onSaved }: 
       setNewSub("");
       setError(null);
     }
-  }, [open, task, defaults?.category, defaults?.status]);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

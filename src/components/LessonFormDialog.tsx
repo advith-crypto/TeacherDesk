@@ -26,7 +26,7 @@ import {
 import { localDateStr } from "@/lib/attention";
 import { useLessonMutations } from "@/hooks/use-lessons";
 import type { LessonItem } from "@/hooks/use-lessons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Props = {
   open: boolean;
@@ -54,7 +54,11 @@ export function LessonFormDialog({ open, onOpenChange, lesson, onSaved }: Props)
   const [priority, setPriority] = useState("medium");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Reset form fields whenever the dialog transitions to open — the guarded
+  // render-time adjustment pattern recommended by React (no cascading effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setTitle(lesson?.title ?? "");
       setSubject(lesson?.subject ?? "");
@@ -72,7 +76,7 @@ export function LessonFormDialog({ open, onOpenChange, lesson, onSaved }: Props)
       setPriority(lesson?.priority ?? "medium");
       setError(null);
     }
-  }, [open, lesson]);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -62,15 +62,6 @@ export function lessonAttentionReasons(lesson: {
   return reasons.slice(0, 2);
 }
 
-/** Local date for the start of the current week (Monday). */
-function weekStartStr(today: string): string {
-  const d = new Date(today + "T00:00:00");
-  const day = d.getDay(); // 0 = Sunday
-  const diff = day === 0 ? -6 : 1 - day; // shift back to Monday
-  d.setDate(d.getDate() + diff);
-  return localDateStr(d);
-}
-
 /**
  * Intelligent sort: today/upcoming first by date, then undated, completed last.
  * Within the same bucket: date, then priority, then newest created.

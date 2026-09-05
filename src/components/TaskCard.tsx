@@ -1,8 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { attentionReasons, friendlyDate } from "@/lib/attention";
-import { CATEGORY_ICONS, CATEGORY_LABELS, PRIORITY_LABELS, STATUS_LABELS, type Category, type Priority } from "@/lib/tasks-shared";
+import { CATEGORY_ICONS, CATEGORY_LABELS, PRIORITY_LABELS } from "@/lib/tasks-shared";
 import { cn } from "@/lib/utils";
-import type { Category as _C, Priority as _P } from "@/lib/tasks-shared";
 import { Check, Clock } from "lucide-react";
 import { useTaskMutations, type TaskItem } from "@/hooks/use-tasks";
 import type { Category as CatType, Priority as PriType } from "@/lib/tasks-shared";

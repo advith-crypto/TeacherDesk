@@ -5,9 +5,11 @@ import { CreateTaskDialog } from "@/components/TaskFormDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
-import { friendlyDate } from "@/lib/attention";
+import type { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile, useTasks, type TaskItem } from "@/hooks/use-tasks";
+import { useLessonSummary } from "@/hooks/use-lessons";
 import {
   attentionScore,
   attentionReasons,
@@ -19,7 +21,6 @@ import {
   ClipboardList,
   CalendarClock,
   ListChecks,
-  Pencil,
   Plus,
   Sparkles,
   Sun,
@@ -27,16 +28,10 @@ import {
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { Link, useNavigate } from "react-router";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
 
 const QUICK_ACTIONS = [
   { label: "Add task", icon: Plus, to: "/tasks?new=1" },
-  { label: "Plan lesson", icon: BookOpen, to: "/lessons" },
+  { label: "Plan lesson", icon: BookOpen, to: "/lessons?new=1" },
   { label: "Add correction", icon: ClipboardCheck, to: "/corrections" },
   { label: "Question paper", icon: ClipboardList, to: "/question-papers" },
   { label: "Timetable", icon: CalendarClock, to: "/timetable" },
@@ -54,8 +49,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const profile = useProfile();
   const tasks = useTasks();
-  const navigate = useNavigate();
   const activities = useQuery(api.tasks.listActivities, { limit: 6 });
+  const lessonSummary = useLessonSummary();
 
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -105,6 +100,20 @@ export default function Dashboard() {
     [openTasks],
   );
 
+  // Deterministic focus answer: overdue tasks, then due-today tasks, then
+  // today's lessons, then a general nudge. No AI — pure date/status logic.
+  const focusText = useMemo(() => {
+    if (overdue.length > 0)
+      return `${overdue.length} overdue ${overdue.length === 1 ? "task needs" : "tasks need"} you first`;
+    if (dueToday.length > 0)
+      return `${dueToday.length} ${dueToday.length === 1 ? "task is" : "tasks are"} due today`;
+    const todaysLessons = lessonSummary?.todays.length ?? 0;
+    if (todaysLessons > 0)
+      return `${todaysLessons} ${todaysLessons === 1 ? "lesson" : "lessons"} to teach today`;
+    if (openTasks.length > 0) return "You're on top of things — pick your next task";
+    return "Nothing pending. Enjoy the calm!";
+  }, [overdue.length, dueToday.length, lessonSummary, openTasks.length]);
+
   const openDetail = (t: TaskItem) => {
     setDetailTask(t);
     setDetailOpen(true);
@@ -145,15 +154,7 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm opacity-90">Your focus for today</p>
-              <p className="mt-0.5 font-semibold leading-snug">
-                {overdue.length > 0
-                  ? `${overdue.length} overdue ${overdue.length === 1 ? "task needs" : "tasks need"} you first`
-                  : dueToday.length > 0
-                    ? `${dueToday.length} ${dueToday.length === 1 ? "task is" : "tasks are"} due today`
-                    : openTasks.length > 0
-                      ? "You're on top of things — pick your next task"
-                      : "Nothing pending. Enjoy the calm!"}
-              </p>
+              <p className="mt-0.5 font-semibold leading-snug">{focusText}</p>
               {!profile && (
                 <Link
                   to="/onboarding"
@@ -199,6 +200,48 @@ export default function Dashboard() {
                 </Link>
               ))}
             </div>
+          </section>
+
+          {/* Today's lessons */}
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-base font-semibold">
+                <BookOpen className="size-4 text-primary" />
+                Today's lessons
+                {lessonSummary && lessonSummary.todays.length > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {lessonSummary.todays.length}
+                  </span>
+                )}
+              </h2>
+              <Link to="/lessons" className="text-sm font-medium text-primary">
+                Lesson planner
+              </Link>
+            </div>
+            {lessonSummary === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : lessonSummary.todays.length === 0 && !lessonSummary.next ? (
+              <div className="card-soft flex items-center gap-3 p-4">
+                <BookOpen className="size-5 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No lessons today. Plan your next class from the Lesson Planner.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {lessonSummary.todays.map((l) => (
+                  <DashboardLessonRow key={l._id} lesson={l} chip="Today" />
+                ))}
+                {lessonSummary.todays.length === 0 && lessonSummary.next && (
+                  <DashboardLessonRow lesson={lessonSummary.next} chip="Next" />
+                )}
+                {lessonSummary.plannedThisWeek > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {lessonSummary.plannedThisWeek} {lessonSummary.plannedThisWeek === 1 ? "lesson" : "lessons"} planned this week
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Attention */}
@@ -335,4 +378,59 @@ export default function Dashboard() {
 function friendlyTime(ms: number): string {
   const d = new Date(ms);
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+/**
+ * Compact lesson row for the dashboard. Deterministic chip from real data:
+ * "Today" for today's lessons, "Next" for the next upcoming lesson.
+ */
+function DashboardLessonRow({
+  lesson,
+  chip,
+}: {
+  lesson: {
+    _id: Id<"lessons">;
+    title: string;
+    subject: string;
+    classGrade: string;
+    section?: string;
+    topic: string;
+  };
+  chip: "Today" | "Next";
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Lesson: ${lesson.title}`}
+      onClick={() => navigate("/lessons")}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate("/lessons");
+        }
+      }}
+      className="card-soft card-soft-hover flex w-full cursor-pointer flex-col gap-0.5 p-4 text-left"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 font-medium leading-5">{lesson.title}</p>
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
+            chip === "Today"
+              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+              : "bg-sky-500/10 text-sky-700 dark:text-sky-400",
+          )}
+        >
+          {chip}
+        </span>
+      </div>
+      <p className="truncate text-[13px] text-muted-foreground">
+        {lesson.subject} · {lesson.classGrade}
+        {lesson.section ? ` · ${lesson.section}` : ""} · {lesson.topic}
+      </p>
+    </div>
+  );
 }
