@@ -21,16 +21,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-tasks";
 import { cn } from "@/lib/utils";
@@ -96,57 +90,31 @@ function SectionCard({
   );
 }
 
-export default function Settings() {
-  const { user, signOut } = useAuth();
-  const profile = useProfile();
-  const settings = useQuery(api.profiles.getSettings);
+/**
+ * Teacher profile form. The parent keys this component on the profile
+ * identity, so it prefills from server data at mount instead of syncing
+ * state in an effect.
+ */
+function ProfileForm({
+  profile,
+  fallbackName,
+}: {
+  profile: Doc<"teacherProfiles"> | null | undefined;
+  fallbackName?: string;
+}) {
   const saveProfile = useMutation(api.profiles.saveProfile);
-  const saveTheme = useMutation(api.profiles.saveTheme);
-  const clearMyData = useMutation(api.profiles.clearMyData);
-  const { signIn } = useAuthActions();
-  const navigate = useNavigate();
 
-  const [fullName, setFullName] = useState("");
-  const [schoolName, setSchoolName] = useState("");
-  const [board, setBoard] = useState("");
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [grades, setGrades] = useState<string[]>([]);
-  const [workStart, setWorkStart] = useState("09:00");
-  const [workEnd, setWorkEnd] = useState("17:00");
+  const [fullName, setFullName] = useState(
+    profile?.fullName ?? fallbackName ?? "",
+  );
+  const [schoolName, setSchoolName] = useState(profile?.schoolName ?? "");
+  const [board, setBoard] = useState(profile?.board ?? "");
+  const [subjects, setSubjects] = useState<string[]>(profile?.subjects ?? []);
+  const [grades, setGrades] = useState<string[]>(profile?.grades ?? []);
+  const [workStart, setWorkStart] = useState(profile?.workStartTime ?? "09:00");
+  const [workEnd, setWorkEnd] = useState(profile?.workEndTime ?? "17:00");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  const [haptics, setHaptics] = useState(true);
-
-  const [verifyOpen, setVerifyOpen] = useState(false);
-  const [verifyEmail, setVerifyEmail] = useState("");
-  const [verifyCode, setVerifyCode] = useState("");
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [deleteBusy, setDeleteBusy] = useState(false);
-
-  // Prefill when the profile loads.
-  useEffect(() => {
-    if (profile) {
-      setFullName(profile.fullName ?? user?.name ?? "");
-      setSchoolName(profile.schoolName ?? "");
-      setBoard(profile.board ?? "");
-      setSubjects(profile.subjects ?? []);
-      setGrades(profile.grades ?? []);
-      setWorkStart(profile.workStartTime ?? "09:00");
-      setWorkEnd(profile.workEndTime ?? "17:00");
-    } else if (user?.name) {
-      setFullName(user.name);
-    }
-  }, [profile, user?.name]);
-
-  const theme = (settings?.theme ?? "system") as ThemeChoice;
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +143,113 @@ export default function Settings() {
       setSaving(false);
     }
   };
+
+  return (
+    <form onSubmit={handleSave} className="flex flex-col gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="st-name">Full name</Label>
+        <Input
+          id="st-name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Your name"
+          required
+          maxLength={120}
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="st-school">School / institution</Label>
+        <Input
+          id="st-school"
+          value={schoolName}
+          onChange={(e) => setSchoolName(e.target.value)}
+          placeholder="e.g. Greenwood High School"
+          maxLength={160}
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="st-board">Board / curriculum (optional)</Label>
+        <Input
+          id="st-board"
+          value={board}
+          onChange={(e) => setBoard(e.target.value)}
+          placeholder="e.g. State Board, IB, GCSE…"
+          maxLength={120}
+        />
+      </div>
+      <TagInput
+        label="Subjects you teach"
+        hint="Press Enter or + to add each subject"
+        values={subjects}
+        onChange={setSubjects}
+        placeholder="e.g. Mathematics"
+      />
+      <TagInput
+        label="Classes / grades you teach"
+        hint="Any naming works: Grade 8, Class 10-B, Year 7…"
+        values={grades}
+        onChange={setGrades}
+        placeholder="e.g. Grade 8"
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="st-start">Workday starts</Label>
+          <Input
+            id="st-start"
+            type="time"
+            value={workStart}
+            onChange={(e) => setWorkStart(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="st-end">Workday ends</Label>
+          <Input
+            id="st-end"
+            type="time"
+            value={workEnd}
+            onChange={(e) => setWorkEnd(e.target.value)}
+          />
+        </div>
+      </div>
+      <Button type="submit" className="h-11 w-full sm:w-auto" disabled={saving}>
+        {saving ? (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        ) : saved ? (
+          <Check className="mr-2 size-4" />
+        ) : (
+          <Save className="mr-2 size-4" />
+        )}
+        {saving ? "Saving…" : saved ? "Saved" : "Save profile"}
+      </Button>
+    </form>
+  );
+}
+
+export default function Settings() {
+  const { user, signOut } = useAuth();
+  const profile = useProfile();
+  const settings = useQuery(api.profiles.getSettings);
+  const saveTheme = useMutation(api.profiles.saveTheme);
+  const clearMyData = useMutation(api.profiles.clearMyData);
+  const { signIn } = useAuthActions();
+  const navigate = useNavigate();
+
+  const [haptics, setHaptics] = useState(true);
+
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const theme = (settings?.theme ?? "system") as ThemeChoice;
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   const handleThemeChange = async (next: ThemeChoice) => {
     applyTheme(next);
@@ -311,85 +386,13 @@ export default function Settings() {
               </div>
             </SectionCard>
 
-            {/* Profile */}
+            {/* Profile — keyed on profile identity so it re-prefills on load */}
             <SectionCard title="Teacher profile" icon={UserRound}>
-              <form onSubmit={handleSave} className="flex flex-col gap-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="st-name">Full name</Label>
-                  <Input
-                    id="st-name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your name"
-                    required
-                    maxLength={120}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="st-school">School / institution</Label>
-                  <Input
-                    id="st-school"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                    placeholder="e.g. Greenwood High School"
-                    maxLength={160}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="st-board">Board / curriculum (optional)</Label>
-                  <Input
-                    id="st-board"
-                    value={board}
-                    onChange={(e) => setBoard(e.target.value)}
-                    placeholder="e.g. State Board, IB, GCSE…"
-                    maxLength={120}
-                  />
-                </div>
-                <TagInput
-                  label="Subjects you teach"
-                  hint="Press Enter or + to add each subject"
-                  values={subjects}
-                  onChange={setSubjects}
-                  placeholder="e.g. Mathematics"
-                />
-                <TagInput
-                  label="Classes / grades you teach"
-                  hint="Any naming works: Grade 8, Class 10-B, Year 7…"
-                  values={grades}
-                  onChange={setGrades}
-                  placeholder="e.g. Grade 8"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="st-start">Workday starts</Label>
-                    <Input
-                      id="st-start"
-                      type="time"
-                      value={workStart}
-                      onChange={(e) => setWorkStart(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="st-end">Workday ends</Label>
-                    <Input
-                      id="st-end"
-                      type="time"
-                      value={workEnd}
-                      onChange={(e) => setWorkEnd(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button type="submit" className="h-11 w-full sm:w-auto" disabled={saving}>
-                  {saving ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : saved ? (
-                    <Check className="mr-2 size-4" />
-                  ) : (
-                    <Save className="mr-2 size-4" />
-                  )}
-                  {saving ? "Saving…" : saved ? "Saved" : "Save profile"}
-                </Button>
-              </form>
+              <ProfileForm
+                key={profile?._id ?? (profile === undefined ? "loading" : "none")}
+                profile={profile}
+                fallbackName={user?.name}
+              />
             </SectionCard>
 
             {/* Appearance */}
