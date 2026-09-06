@@ -19,6 +19,7 @@ const TasksPage = lazy(() => import("./pages/Tasks.tsx"));
 const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
 const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
 const CorrectionsPage = lazy(() => import("./pages/Corrections.tsx"));
+const QuestionPapersPage = lazy(() => import("./pages/QuestionPapers.tsx"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon.tsx"));
 
 // Simple loading fallback for route transitions
@@ -189,10 +190,7 @@ createRoot(document.getElementById("root")!).render(
                 path="/question-papers"
                 element={
                   <RequireAuth>
-                    <ComingSoon
-                      title="Question Papers"
-                      description="Prepare and organize question papers with clear stages from drafting to printing."
-                    />
+                    <QuestionPapersPage />
                   </RequireAuth>
                 }
               />

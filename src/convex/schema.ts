@@ -72,9 +72,9 @@ const schema = defineSchema({
   activities: defineTable({
     userId: v.id("users"),
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
-    entityType: v.string(), // task | subtask | profile | account | lesson | correction
+    entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper
     entityId: v.optional(
-      v.union(v.id("tasks"), v.id("lessons"), v.id("corrections")),
+      v.union(v.id("tasks"), v.id("lessons"), v.id("corrections"), v.id("questionPapers")),
     ),
     summary: v.string(),
   }).index("by_user", ["userId"]), // _creationTime ordering is implicit
@@ -138,6 +138,33 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_user_deadline", ["userId", "correctionDeadline"]),
+
+  /**
+   * Question Papers — Phase 2C. Organize question-paper preparation from
+   * draft to ready, with exam details and preparation deadlines.
+   */
+  questionPapers: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    subject: v.string(),
+    classGrade: v.string(),
+    section: v.optional(v.string()),
+    examType: v.string(),
+    examDate: v.optional(v.string()), // "YYYY-MM-DD"
+    preparationDeadline: v.optional(v.string()), // "YYYY-MM-DD"
+    durationMinutes: v.optional(v.number()),
+    totalMarks: v.optional(v.number()),
+    status: v.string(), // "not_started" | "draft" | "ready" | "completed"
+    priority: v.string(), // "low" | "medium" | "high" | "urgent"
+    syllabusTopics: v.optional(v.string()),
+    questionCount: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    completedAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_deadline", ["userId", "preparationDeadline"]),
 });
 
 export default schema;

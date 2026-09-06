@@ -125,3 +125,47 @@ export const correctionUpdateValidator = v.object({
   priority: v.optional(v.string()),
 });
 
+// --- Question Papers (Phase 2C) ---
+
+export const QUESTION_PAPER_STATUS_VALUES = [
+  "not_started",
+  "draft",
+  "ready",
+  "completed",
+] as const;
+export const QUESTION_PAPER_PRIORITY_VALUES = ["low", "medium", "high", "urgent"] as const;
+
+export const questionPaperInputValidator = v.object({
+  title: v.string(),
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  examType: v.string(),
+  examDate: v.optional(v.string()),
+  preparationDeadline: v.optional(v.string()),
+  durationMinutes: v.optional(v.number()),
+  totalMarks: v.optional(v.number()),
+  status: v.string(),
+  priority: v.string(),
+  syllabusTopics: v.optional(v.string()),
+  questionCount: v.optional(v.number()),
+  notes: v.optional(v.string()),
+});
+
+export const questionPaperUpdateValidator = v.object({
+  title: v.optional(v.string()),
+  subject: v.optional(v.string()),
+  classGrade: v.optional(v.string()),
+  section: v.optional(v.nullable(v.string())),
+  examType: v.optional(v.string()),
+  examDate: v.optional(v.nullable(v.string())),
+  preparationDeadline: v.optional(v.nullable(v.string())),
+  durationMinutes: v.optional(v.nullable(v.number())),
+  totalMarks: v.optional(v.nullable(v.number())),
+  status: v.optional(v.string()),
+  priority: v.optional(v.string()),
+  syllabusTopics: v.optional(v.nullable(v.string())),
+  questionCount: v.optional(v.nullable(v.number())),
+  notes: v.optional(v.nullable(v.string())),
+});
+

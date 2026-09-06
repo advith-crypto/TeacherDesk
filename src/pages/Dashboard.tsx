@@ -12,9 +12,11 @@ import { useProfile, useTasks, type TaskItem } from "@/hooks/use-tasks";
 import { useLessonSummary } from "@/hooks/use-lessons";
 import { useCorrectionSummary } from "@/hooks/use-corrections";
 import { deadlineBucket } from "@/lib/corrections-shared";
+import { useQuestionPaperSummary } from "@/hooks/use-question-papers";
 import {
   attentionScore,
   attentionReasons,
+  friendlyDate,
 } from "@/lib/attention";
 import {
   AlertTriangle,
@@ -35,7 +37,7 @@ const QUICK_ACTIONS = [
   { label: "Add task", icon: Plus, to: "/tasks?new=1" },
   { label: "Plan lesson", icon: BookOpen, to: "/lessons?new=1" },
   { label: "Correct papers", icon: ClipboardCheck, to: "/corrections?new=1" },
-  { label: "Question paper", icon: ClipboardList, to: "/question-papers" },
+  { label: "Question paper", icon: ClipboardList, to: "/question-papers?new=1" },
   { label: "Timetable", icon: CalendarClock, to: "/timetable" },
   { label: "Exam seating", icon: ClipboardList, to: "/exam-seating" },
 ] as const;
@@ -54,6 +56,7 @@ export default function Dashboard() {
   const activities = useQuery(api.tasks.listActivities, { limit: 6 });
   const lessonSummary = useLessonSummary();
   const correctionSummary = useCorrectionSummary();
+  const questionPaperSummary = useQuestionPaperSummary();
 
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -119,9 +122,15 @@ export default function Dashboard() {
     const corrDueToday = correctionSummary?.dueToday ?? 0;
     if (corrDueToday > 0)
       return `${corrDueToday} ${corrDueToday === 1 ? "correction is" : "corrections are"} due today`;
+    const qpOverdue = questionPaperSummary?.overdue ?? 0;
+    if (qpOverdue > 0)
+      return `${qpOverdue} ${qpOverdue === 1 ? "paper" : "papers"} have overdue preparation — check Question Papers`;
+    const qpDueToday = questionPaperSummary?.dueToday ?? 0;
+    if (qpDueToday > 0)
+      return `${qpDueToday} ${qpDueToday === 1 ? "paper" : "papers"} need finishing today`;
     if (openTasks.length > 0) return "You're on top of things — pick your next task";
     return "Nothing pending. Enjoy the calm!";
-  }, [overdue.length, dueToday.length, lessonSummary, correctionSummary, openTasks.length]);
+  }, [overdue.length, dueToday.length, lessonSummary, correctionSummary, questionPaperSummary, openTasks.length]);
 
   const openDetail = (t: TaskItem) => {
     setDetailTask(t);
@@ -298,6 +307,57 @@ export default function Dashboard() {
             )}
           </section>
 
+          {/* Question papers */}
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-base font-semibold">
+                <ClipboardList className="size-4 text-primary" />
+                Question papers
+                {questionPaperSummary && questionPaperSummary.draft + questionPaperSummary.ready > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {questionPaperSummary.draft + questionPaperSummary.ready}
+                  </span>
+                )}
+              </h2>
+              <Link to="/question-papers" className="text-sm font-medium text-primary">
+                Question papers
+              </Link>
+            </div>
+            {questionPaperSummary === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : questionPaperSummary.active === 0 ? (
+              <div className="card-soft flex items-center gap-3 p-4">
+                <ClipboardList className="size-5 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No question-paper prep needs attention right now.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-[13px] text-muted-foreground">
+                  {questionPaperSummary.draft > 0 && (
+                    <>
+                      {questionPaperSummary.draft} in Draft
+                      {questionPaperSummary.overdue > 0 || questionPaperSummary.nextExam ? " · " : ""}
+                    </>
+                  )}
+                  {questionPaperSummary.overdue > 0 && (
+                    <>
+                      {questionPaperSummary.overdue} overdue
+                      {questionPaperSummary.nextExam ? " · " : ""}
+                    </>
+                  )}
+                  {questionPaperSummary.nextExam && (
+                    <>Next exam {friendlyDate(questionPaperSummary.nextExam.examDate!)}</>
+                  )}
+                </p>
+                {questionPaperSummary.attention.slice(0, 2).map((p) => (
+                  <DashboardQuestionPaperRow key={p._id} paper={p} />
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* Attention */}
           <section className="mb-8">
             <div className="mb-3 flex items-center justify-between">
@@ -432,6 +492,73 @@ export default function Dashboard() {
 function friendlyTime(ms: number): string {
   const d = new Date(ms);
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+/**
+ * Compact question-paper row for the dashboard. Deterministic prep-deadline
+ * chip from real data: Overdue / Due today / Due soon / Upcoming.
+ */
+function DashboardQuestionPaperRow({
+  paper,
+}: {
+  paper: {
+    _id: Id<"questionPapers">;
+    title: string;
+    subject: string;
+    classGrade: string;
+    examType: string;
+    examDate?: string;
+    preparationDeadline?: string;
+    status: string;
+    priority: string;
+  };
+}) {
+  const navigate = useNavigate();
+  const today = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const pd = paper.preparationDeadline;
+  const chip = !pd
+    ? { label: "No deadline", cls: "bg-secondary text-muted-foreground" }
+    : pd < today
+      ? { label: "Overdue", cls: "bg-destructive/10 text-destructive" }
+      : pd === today
+        ? { label: "Due today", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" }
+        : pd <= (() => {
+            const d = new Date(today + "T00:00:00");
+            d.setDate(d.getDate() + 3);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          })()
+          ? { label: "Due soon", cls: "bg-sky-500/10 text-sky-700 dark:text-sky-400" }
+          : { label: "Upcoming", cls: "bg-secondary text-muted-foreground" };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Question paper: ${paper.title}`}
+      onClick={() => navigate("/question-papers")}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate("/question-papers");
+        }
+      }}
+      className="card-soft card-soft-hover flex w-full cursor-pointer flex-col gap-0.5 p-4 text-left"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 font-medium leading-5">{paper.title}</p>
+        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", chip.cls)}>
+          {chip.label}
+        </span>
+      </div>
+      <p className="truncate text-[13px] text-muted-foreground">
+        {paper.subject} · {paper.classGrade} · {paper.examType}
+        {paper.examDate ? ` · Exam ${friendlyDate(paper.examDate)}` : ""}
+      </p>
+    </div>
+  );
 }
 
 /**
