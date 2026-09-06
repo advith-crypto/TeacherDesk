@@ -72,8 +72,10 @@ const schema = defineSchema({
   activities: defineTable({
     userId: v.id("users"),
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
-    entityType: v.string(), // task | subtask | profile | account | lesson
-    entityId: v.optional(v.union(v.id("tasks"), v.id("lessons"))),
+    entityType: v.string(), // task | subtask | profile | account | lesson | correction
+    entityId: v.optional(
+      v.union(v.id("tasks"), v.id("lessons"), v.id("corrections")),
+    ),
     summary: v.string(),
   }).index("by_user", ["userId"]), // _creationTime ordering is implicit
 
@@ -110,6 +112,32 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_user_date", ["userId", "lessonDate"]),
+
+  /**
+   * Corrections — Phase 2B Corrections Tracker. Batches of papers/assignments
+   * that need correction, per subject/class, with progress tracking.
+   * remainingPapers and progress are always derived, never stored.
+   */
+  corrections: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    subject: v.string(),
+    classGrade: v.string(),
+    section: v.optional(v.string()),
+    assessmentType: v.string(),
+    assessmentDate: v.optional(v.string()), // "YYYY-MM-DD"
+    correctionDeadline: v.string(), // "YYYY-MM-DD"
+    totalPapers: v.number(),
+    correctedPapers: v.number(),
+    notes: v.optional(v.string()),
+    priority: v.string(), // "low" | "medium" | "high" | "urgent"
+    status: v.string(), // "not_started" | "in_progress" | "completed"
+    completedAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_deadline", ["userId", "correctionDeadline"]),
 });
 
 export default schema;

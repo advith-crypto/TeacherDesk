@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile, useTasks, type TaskItem } from "@/hooks/use-tasks";
 import { useLessonSummary } from "@/hooks/use-lessons";
+import { useCorrectionSummary } from "@/hooks/use-corrections";
+import { deadlineBucket } from "@/lib/corrections-shared";
 import {
   attentionScore,
   attentionReasons,
@@ -32,7 +34,7 @@ import { Link, useNavigate } from "react-router";
 const QUICK_ACTIONS = [
   { label: "Add task", icon: Plus, to: "/tasks?new=1" },
   { label: "Plan lesson", icon: BookOpen, to: "/lessons?new=1" },
-  { label: "Add correction", icon: ClipboardCheck, to: "/corrections" },
+  { label: "Correct papers", icon: ClipboardCheck, to: "/corrections?new=1" },
   { label: "Question paper", icon: ClipboardList, to: "/question-papers" },
   { label: "Timetable", icon: CalendarClock, to: "/timetable" },
   { label: "Exam seating", icon: ClipboardList, to: "/exam-seating" },
@@ -51,6 +53,7 @@ export default function Dashboard() {
   const tasks = useTasks();
   const activities = useQuery(api.tasks.listActivities, { limit: 6 });
   const lessonSummary = useLessonSummary();
+  const correctionSummary = useCorrectionSummary();
 
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -110,9 +113,15 @@ export default function Dashboard() {
     const todaysLessons = lessonSummary?.todays.length ?? 0;
     if (todaysLessons > 0)
       return `${todaysLessons} ${todaysLessons === 1 ? "lesson" : "lessons"} to teach today`;
+    const corrOverdue = correctionSummary?.overdue ?? 0;
+    if (corrOverdue > 0)
+      return `${corrOverdue} ${corrOverdue === 1 ? "correction batch" : "correction batches"} overdue — check the Corrections tracker`;
+    const corrDueToday = correctionSummary?.dueToday ?? 0;
+    if (corrDueToday > 0)
+      return `${corrDueToday} ${corrDueToday === 1 ? "correction is" : "corrections are"} due today`;
     if (openTasks.length > 0) return "You're on top of things — pick your next task";
     return "Nothing pending. Enjoy the calm!";
-  }, [overdue.length, dueToday.length, lessonSummary, openTasks.length]);
+  }, [overdue.length, dueToday.length, lessonSummary, correctionSummary, openTasks.length]);
 
   const openDetail = (t: TaskItem) => {
     setDetailTask(t);
@@ -240,6 +249,51 @@ export default function Dashboard() {
                     {lessonSummary.plannedThisWeek} {lessonSummary.plannedThisWeek === 1 ? "lesson" : "lessons"} planned this week
                   </p>
                 )}
+              </div>
+            )}
+          </section>
+
+          {/* Corrections */}
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-base font-semibold">
+                <ClipboardCheck className="size-4 text-primary" />
+                Corrections
+                {correctionSummary && correctionSummary.active > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {correctionSummary.active}
+                  </span>
+                )}
+              </h2>
+              <Link to="/corrections" className="text-sm font-medium text-primary">
+                View corrections
+              </Link>
+            </div>
+            {correctionSummary === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : correctionSummary.active === 0 ? (
+              <div className="card-soft flex items-center gap-3 p-4">
+                <ClipboardCheck className="size-5 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No corrections need attention right now.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-[13px] text-muted-foreground">
+                  {correctionSummary.papersRemaining}{" "}
+                  {correctionSummary.papersRemaining === 1 ? "paper" : "papers"}{" "}
+                  remaining across {correctionSummary.active}{" "}
+                  {correctionSummary.active === 1 ? "correction" : "corrections"}
+                  {correctionSummary.dueToday > 0 && (
+                    <>
+                      {" "}· {correctionSummary.dueToday} due today
+                    </>
+                  )}
+                </p>
+                {correctionSummary.attention.slice(0, 2).map((c) => (
+                  <DashboardCorrectionRow key={c._id} correction={c} />
+                ))}
               </div>
             )}
           </section>
@@ -378,6 +432,85 @@ export default function Dashboard() {
 function friendlyTime(ms: number): string {
   const d = new Date(ms);
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+/**
+ * Compact correction row for the dashboard. Deterministic deadline chip from
+ * real data: Overdue / Due today / Due soon / Upcoming.
+ */
+function DashboardCorrectionRow({
+  correction,
+}: {
+  correction: {
+    _id: Id<"corrections">;
+    title: string;
+    subject: string;
+    classGrade: string;
+    assessmentType: string;
+    correctionDeadline: string;
+    totalPapers: number;
+    correctedPapers: number;
+    status: string;
+    priority: string;
+  };
+}) {
+  const navigate = useNavigate();
+  const bucket = deadlineBucket(correction);
+  const chip =
+    bucket === "overdue"
+      ? { label: "Overdue", cls: "bg-destructive/10 text-destructive" }
+      : bucket === "today"
+        ? { label: "Due today", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" }
+        : bucket === "soon"
+          ? { label: "Due soon", cls: "bg-sky-500/10 text-sky-700 dark:text-sky-400" }
+          : { label: "Upcoming", cls: "bg-secondary text-muted-foreground" };
+  const pct =
+    correction.totalPapers > 0
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round((correction.correctedPapers / correction.totalPapers) * 100),
+          ),
+        )
+      : 0;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Correction: ${correction.title}`}
+      onClick={() => navigate("/corrections")}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate("/corrections");
+        }
+      }}
+      className="card-soft card-soft-hover flex w-full cursor-pointer flex-col gap-1.5 p-4 text-left"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 font-medium leading-5">{correction.title}</p>
+        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", chip.cls)}>
+          {chip.label}
+        </span>
+      </div>
+      <p className="truncate text-[13px] text-muted-foreground">
+        {correction.subject} · {correction.classGrade} · {correction.assessmentType}
+      </p>
+      <div className="flex items-center gap-2">
+        <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-primary/10" aria-hidden>
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+          {correction.correctedPapers} / {correction.totalPapers} corrected
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /**

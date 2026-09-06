@@ -86,3 +86,42 @@ export const lessonUpdateValidator = v.object({
   status: v.optional(v.string()),
   priority: v.optional(v.string()),
 });
+
+// --- Corrections (Phase 2B) ---
+
+/** Lowercase keys follow the tasks/lessons convention; labels live in the UI. */
+export const CORRECTION_STATUS_VALUES = [
+  "not_started",
+  "in_progress",
+  "completed",
+] as const;
+export const CORRECTION_PRIORITY_VALUES = ["low", "medium", "high", "urgent"] as const;
+
+export const correctionInputValidator = v.object({
+  title: v.string(),
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  assessmentType: v.string(),
+  assessmentDate: v.optional(v.string()),
+  correctionDeadline: v.string(),
+  totalPapers: v.number(),
+  correctedPapers: v.optional(v.number()),
+  notes: v.optional(v.string()),
+  priority: v.string(),
+});
+
+export const correctionUpdateValidator = v.object({
+  title: v.optional(v.string()),
+  subject: v.optional(v.string()),
+  classGrade: v.optional(v.string()),
+  section: v.optional(v.nullable(v.string())),
+  assessmentType: v.optional(v.string()),
+  assessmentDate: v.optional(v.nullable(v.string())),
+  correctionDeadline: v.optional(v.string()),
+  totalPapers: v.optional(v.number()),
+  correctedPapers: v.optional(v.number()),
+  notes: v.optional(v.nullable(v.string())),
+  priority: v.optional(v.string()),
+});
+

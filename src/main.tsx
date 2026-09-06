@@ -18,6 +18,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding.tsx"));
 const TasksPage = lazy(() => import("./pages/Tasks.tsx"));
 const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
 const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
+const CorrectionsPage = lazy(() => import("./pages/Corrections.tsx"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon.tsx"));
 
 // Simple loading fallback for route transitions
@@ -180,10 +181,7 @@ createRoot(document.getElementById("root")!).render(
                 path="/corrections"
                 element={
                   <RequireAuth>
-                    <ComingSoon
-                      title="Corrections"
-                      description="Track correction work per class and subject, and never lose a pending stack."
-                    />
+                    <CorrectionsPage />
                   </RequireAuth>
                 }
               />
