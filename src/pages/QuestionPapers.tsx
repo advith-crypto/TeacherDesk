@@ -17,12 +17,14 @@ import {
   useQuestionPapers,
   type QuestionPaperItem,
 } from "@/hooks/use-question-papers";
-import { ClipboardList, Plus, SearchX } from "lucide-react";
+import { useAiPaperSummary } from "@/hooks/use-ai-papers";
+import { ClipboardList, Plus, SearchX, Sparkles, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 export default function QuestionPapers() {
   const papers = useQuestionPapers();
+  const aiSummary = useAiPaperSummary();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [filters, setFilters] = useState<QuestionPaperFilterState>(
@@ -116,6 +118,38 @@ export default function QuestionPapers() {
                 </p>
               </div>
             ))}
+          </section>
+
+          {/* AI generator entry — distinct from the tracker above */}
+          <section className="card-soft mb-5 overflow-hidden bg-gradient-to-br from-primary/10 via-indigo-500/10 to-transparent p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground">
+                  <WandSparkles className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="flex flex-wrap items-center gap-1.5 font-semibold">
+                    AI Question Paper Generator
+                    {aiSummary && aiSummary.total > 0 && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                        {aiSummary.total} saved
+                      </span>
+                    )}
+                  </h2>
+                  <p className="mt-0.5 text-[13px] text-muted-foreground">
+                    Generate a complete paper from your syllabus with AI, then
+                    review and save it as a draft.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/question-papers/ai-generator"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              >
+                <Sparkles className="size-4" />
+                Open generator
+              </Link>
+            </div>
           </section>
 
           {/* Search + filters + sort */}

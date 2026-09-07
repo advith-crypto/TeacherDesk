@@ -83,9 +83,10 @@ export const saveProfile = mutation({
 
 /**
  * Delete every TeacherDesk record owned by the current user — profile,
- * tasks, subtasks, activity history, settings, and all Phase 2 module rows
+ * tasks, subtasks, activity history, settings, all Phase 2 module rows
  * (lessons, corrections, question papers, timetable entries, exam seating
- * plans and their assignments). Used by "Delete account data".
+ * plans and their assignments), and Phase 3A AI generated question papers.
+ * Used by "Delete account data".
  */
 export const clearMyData = mutation({
   args: {},
@@ -121,12 +122,14 @@ export const clearMyData = mutation({
       await ctx.db.delete(plan._id);
     }
 
-    // Remaining Phase 2 module rows (all keyed by userId).
+    // Remaining module rows (all keyed by userId): Phase 2 modules plus the
+    // Phase 3A AI generated question papers.
     for (const table of [
       "lessons",
       "corrections",
       "questionPapers",
       "timetableEntries",
+      "aiGeneratedPapers",
     ] as const) {
       const rows = await ctx.db
         .query(table)

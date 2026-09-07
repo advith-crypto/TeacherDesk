@@ -72,7 +72,7 @@ const schema = defineSchema({
   activities: defineTable({
     userId: v.id("users"),
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
-    entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper | timetable | exam_seating
+    entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper | timetable | exam_seating | ai_paper
     entityId: v.optional(
       v.union(
         v.id("tasks"),
@@ -82,6 +82,7 @@ const schema = defineSchema({
         v.id("timetableEntries"),
         v.id("examSeatingPlans"),
         v.id("examSeatingAssignments"),
+        v.id("aiGeneratedPapers"),
       ),
     ),
     summary: v.string(),
@@ -234,6 +235,52 @@ const schema = defineSchema({
     .index("by_seating_plan", ["seatingPlanId"])
     .index("by_user", ["userId"])
     .index("by_plan_student", ["seatingPlanId", "studentIdentifier"]),
+
+  /**
+   * AI Generated Question Papers — Phase 3A. Question papers produced by the
+   * AI generator and saved by the teacher. Content is stored as typed
+   * sections + questions (never one opaque blob) so it can be previewed,
+   * re-rendered and later edited. Every row carries userId for ownership.
+   * Totals are always derived from content on read; requested totals are
+   * kept alongside so mismatches are visible instead of being papered over.
+   */
+  aiGeneratedPapers: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    subject: v.string(),
+    classGrade: v.string(),
+    section: v.optional(v.string()),
+    examType: v.string(),
+    durationMinutes: v.optional(v.number()),
+    difficulty: v.string(), // "Easy" | "Medium" | "Hard" | "Mixed"
+    topics: v.string(), // the syllabus/topics the paper was generated from
+    questionTypes: v.array(v.string()),
+    additionalInstructions: v.optional(v.string()),
+    totalMarksRequested: v.number(),
+    questionCountRequested: v.number(),
+    // Structured content: sections → questions with number/type/marks/options.
+    // `answer` is an internal teacher-facing key, never shown to students.
+    content: v.array(
+      v.object({
+        name: v.string(),
+        instructions: v.optional(v.string()),
+        questions: v.array(
+          v.object({
+            number: v.number(),
+            text: v.string(),
+            type: v.string(),
+            marks: v.number(),
+            options: v.optional(v.array(v.string())),
+            answer: v.optional(v.string()),
+          }),
+        ),
+      }),
+    ),
+    status: v.string(), // "draft" | "ready"
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"]),
 });
 
 export default schema;

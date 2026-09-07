@@ -13,6 +13,7 @@ import { useLessonSummary } from "@/hooks/use-lessons";
 import { useCorrectionSummary } from "@/hooks/use-corrections";
 import { deadlineBucket } from "@/lib/corrections-shared";
 import { useQuestionPaperSummary } from "@/hooks/use-question-papers";
+import { useAiPaperSummary } from "@/hooks/use-ai-papers";
 import { useTimetableSummary } from "@/hooks/use-timetable";
 import { useSeatingSummary } from "@/hooks/use-exam-seating";
 import { formatTime12 } from "@/lib/timetable-shared";
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const lessonSummary = useLessonSummary();
   const correctionSummary = useCorrectionSummary();
   const questionPaperSummary = useQuestionPaperSummary();
+  const aiPaperSummary = useAiPaperSummary();
   const timetableSummary = useTimetableSummary();
   const seatingSummary = useSeatingSummary();
 
@@ -322,7 +324,7 @@ export default function Dashboard() {
 
           {/* Question papers */}
           <section className="mb-8">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="flex items-center gap-1.5 text-base font-semibold">
                 <ClipboardList className="size-4 text-primary" />
                 Question papers
@@ -332,9 +334,23 @@ export default function Dashboard() {
                   </span>
                 )}
               </h2>
-              <Link to="/question-papers" className="text-sm font-medium text-primary">
-                Question papers
-              </Link>
+              <div className="flex shrink-0 items-center gap-3">
+                {aiPaperSummary !== undefined && aiPaperSummary.total > 0 && (
+                  <span className="hidden rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-foreground sm:inline">
+                    {aiPaperSummary.total} AI saved
+                  </span>
+                )}
+                <Link
+                  to="/question-papers/ai-generator"
+                  className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Sparkles className="size-3.5 text-primary" />
+                  AI generator
+                </Link>
+                <Link to="/question-papers" className="text-sm font-medium text-primary">
+                  Question papers
+                </Link>
+              </div>
             </div>
             {questionPaperSummary === undefined ? (
               <Skeleton className="h-20 w-full" />

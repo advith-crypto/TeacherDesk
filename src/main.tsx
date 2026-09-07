@@ -20,6 +20,7 @@ const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
 const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
 const CorrectionsPage = lazy(() => import("./pages/Corrections.tsx"));
 const QuestionPapersPage = lazy(() => import("./pages/QuestionPapers.tsx"));
+const AiPaperGeneratorPage = lazy(() => import("./pages/AiPaperGenerator.tsx"));
 const TimetablePage = lazy(() => import("./pages/Timetable.tsx"));
 const ExamSeatingPage = lazy(() => import("./pages/ExamSeating.tsx"));
 
@@ -192,6 +193,14 @@ createRoot(document.getElementById("root")!).render(
                 element={
                   <RequireAuth>
                     <QuestionPapersPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/question-papers/ai-generator"
+                element={
+                  <RequireAuth>
+                    <AiPaperGeneratorPage />
                   </RequireAuth>
                 }
               />

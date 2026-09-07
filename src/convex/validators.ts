@@ -229,3 +229,69 @@ export const examSeatingAssignmentUpdateValidator = v.object({
   column: v.optional(v.number()),
 });
 
+// --- AI Question Paper Generator (Phase 3A) ---
+
+/** Difficulty options for AI generation (display strings stored as-is). */
+export const AI_DIFFICULTY_VALUES = ["Easy", "Medium", "Hard", "Mixed"] as const;
+
+/** Question types the AI may be asked to produce (canonical display strings). */
+export const AI_QUESTION_TYPE_VALUES = [
+  "MCQ",
+  "Very Short Answer",
+  "Short Answer",
+  "Long Answer",
+  "Fill in the Blanks",
+  "True / False",
+] as const;
+
+export const AI_PAPER_STATUS_VALUES = ["draft", "ready"] as const;
+
+/** Question shape stored inside a generated paper's content. */
+export const aiPaperQuestionValidator = v.object({
+  number: v.number(),
+  text: v.string(),
+  type: v.string(),
+  marks: v.number(),
+  options: v.optional(v.array(v.string())),
+  answer: v.optional(v.string()),
+});
+
+/** Section shape stored inside a generated paper's content. */
+export const aiPaperSectionValidator = v.object({
+  name: v.string(),
+  instructions: v.optional(v.string()),
+  questions: v.array(aiPaperQuestionValidator),
+});
+
+/** Request args for the AI generation action (what the teacher fills in). */
+export const aiPaperGenerateValidator = v.object({
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  examType: v.string(),
+  topics: v.string(),
+  totalMarks: v.number(),
+  questionCount: v.number(),
+  durationMinutes: v.optional(v.number()),
+  difficulty: v.string(),
+  questionTypes: v.array(v.string()),
+  additionalInstructions: v.optional(v.string()),
+});
+
+/** Args for persisting a generated paper (request + generated content). */
+export const aiPaperSaveValidator = v.object({
+  title: v.string(),
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  examType: v.string(),
+  topics: v.string(),
+  durationMinutes: v.optional(v.number()),
+  difficulty: v.string(),
+  questionTypes: v.array(v.string()),
+  additionalInstructions: v.optional(v.string()),
+  totalMarksRequested: v.number(),
+  questionCountRequested: v.number(),
+  content: v.array(aiPaperSectionValidator),
+});
+
