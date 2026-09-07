@@ -514,8 +514,9 @@ export default function Settings() {
               Delete your account data?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes your profile, tasks, and activity history from
-              TeacherDesk. This cannot be undone.
+              This permanently removes your profile, tasks, lessons, corrections,
+              question papers, timetable, exam seating plans, and activity history
+              from TeacherDesk. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-1.5">

@@ -1,26 +1,43 @@
-import { motion } from "framer-motion";
+import { GraduationCap } from "lucide-react";
+import { Link } from "react-router";
 
+/**
+ * Fallback route for unknown URLs. Public page (outside RequireAuth), so it
+ * uses the TeacherDesk design language and always offers a way back.
+ */
 export default function NotFound() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen flex flex-col"
-    >
-
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="max-w-5xl mx-auto relative px-4">
-          <div className="flex items-center justify-center min-h-[200px]">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-              <p className="text-lg text-gray-600">Page Not Found</p>
-            </div>
-          </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+        <span className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+          <GraduationCap className="size-7" />
+        </span>
+        <p className="text-sm font-semibold text-primary">404</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+          Page not found
+        </h1>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+          This page doesn't exist or may have moved. Head back to your dashboard to
+          keep going.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Link
+            to="/dashboard"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] sm:w-auto"
+          >
+            Go to dashboard
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card px-6 text-sm font-medium text-foreground transition-colors hover:bg-secondary sm:w-auto"
+          >
+            Back to home
+          </Link>
         </div>
       </div>
-    </motion.div>
+      <footer className="pb-6 text-center text-xs text-muted-foreground">
+        TeacherDesk · Built by THOTA ADVITH
+      </footer>
+    </div>
   );
 }

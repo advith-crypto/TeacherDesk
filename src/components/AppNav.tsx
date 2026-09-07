@@ -1,6 +1,6 @@
-import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
+  Armchair,
   BookOpen,
   ClipboardCheck,
   ClipboardList,
@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/corrections", label: "Corrections", short: "Fixes", icon: ClipboardCheck },
   { to: "/question-papers", label: "Question Papers", short: "Papers", icon: ClipboardList },
   { to: "/timetable", label: "Timetable", short: "Time", icon: CalendarClock },
-  { to: "/exam-seating", label: "Exam Seating", short: "Exams", icon: ClipboardList },
+  { to: "/exam-seating", label: "Exam Seating", short: "Exams", icon: Armchair },
   { to: "/settings", label: "Settings", short: "More", icon: SettingsIcon, primary: true },
 ];
 
@@ -38,7 +38,6 @@ const MOBILE_PRIMARY = NAV_ITEMS.filter((i) => i.primary);
 
 /** Mobile bottom navigation with a floating quick-add action. */
 export function MobileNav() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [quickOpen, setQuickOpen] = useState(false);
 
@@ -73,8 +72,6 @@ export function MobileNav() {
         onOpenChange={setQuickOpen}
         onCreated={() => navigate("/tasks")}
       />
-      {/* keep user referenced for future avatar menu */}
-      <span className="hidden">{user?.name}</span>
     </>
   );
 }

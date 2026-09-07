@@ -23,6 +23,7 @@ import {
 } from "@/lib/attention";
 import {
   AlertTriangle,
+  Armchair,
   BookOpen,
   ClipboardCheck,
   ClipboardList,
@@ -43,7 +44,7 @@ const QUICK_ACTIONS = [
   { label: "Correct papers", icon: ClipboardCheck, to: "/corrections?new=1" },
   { label: "Question paper", icon: ClipboardList, to: "/question-papers?new=1" },
   { label: "Timetable", icon: CalendarClock, to: "/timetable" },
-  { label: "Exam seating", icon: ClipboardList, to: "/exam-seating" },
+  { label: "Exam seating", icon: Armchair, to: "/exam-seating" },
 ] as const;
 
 function greeting(): string {

@@ -2,12 +2,15 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bell,
+  BookOpen,
   CalendarClock,
   ClipboardCheck,
+  ClipboardList,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
@@ -35,10 +38,13 @@ const FEATURES = [
 ] as const;
 
 const MODULES = [
-  { icon: ListChecks, label: "Tasks", ready: true },
-  { icon: LayoutDashboard, label: "Dashboard", ready: true },
-  { icon: ClipboardCheck, label: "Corrections", ready: false },
-  { icon: CalendarClock, label: "Timetable", ready: false },
+  { icon: ListChecks, label: "Tasks" },
+  { icon: BookOpen, label: "Lessons" },
+  { icon: ClipboardCheck, label: "Corrections" },
+  { icon: ClipboardList, label: "Question Papers" },
+  { icon: CalendarClock, label: "Timetable" },
+  { icon: Users, label: "Exam Seating" },
+  { icon: LayoutDashboard, label: "Dashboard" },
 ] as const;
 
 export default function Landing() {
@@ -160,20 +166,10 @@ export default function Landing() {
             {MODULES.map((m) => (
               <span
                 key={m.label}
-                className={
-                  "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm " +
-                  (m.ready
-                    ? "border-primary/30 bg-accent text-accent-foreground"
-                    : "border-border bg-card text-muted-foreground")
-                }
+                className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-accent px-4 py-2 text-sm text-accent-foreground"
               >
                 <m.icon className="size-4" />
                 {m.label}
-                {!m.ready && (
-                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium">
-                    Soon
-                  </span>
-                )}
               </span>
             ))}
           </div>

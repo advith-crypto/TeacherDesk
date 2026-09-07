@@ -82,8 +82,10 @@ export const saveProfile = mutation({
 });
 
 /**
- * Delete every TeacherDesk record owned by the current user (profile, tasks,
- * subtasks, activity history, and settings). Used by "Delete account data".
+ * Delete every TeacherDesk record owned by the current user — profile,
+ * tasks, subtasks, activity history, settings, and all Phase 2 module rows
+ * (lessons, corrections, question papers, timetable entries, exam seating
+ * plans and their assignments). Used by "Delete account data".
  */
 export const clearMyData = mutation({
   args: {},
@@ -91,6 +93,7 @@ export const clearMyData = mutation({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
+    // Tasks + their subtasks.
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -104,12 +107,42 @@ export const clearMyData = mutation({
       await ctx.db.delete(task._id);
     }
 
+    // Exam seating plans first so their assignments can be purged too.
+    const plans = await ctx.db
+      .query("examSeatingPlans")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const plan of plans) {
+      const assignments = await ctx.db
+        .query("examSeatingAssignments")
+        .withIndex("by_seating_plan", (q) => q.eq("seatingPlanId", plan._id))
+        .collect();
+      for (const a of assignments) await ctx.db.delete(a._id);
+      await ctx.db.delete(plan._id);
+    }
+
+    // Remaining Phase 2 module rows (all keyed by userId).
+    for (const table of [
+      "lessons",
+      "corrections",
+      "questionPapers",
+      "timetableEntries",
+    ] as const) {
+      const rows = await ctx.db
+        .query(table)
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      for (const row of rows) await ctx.db.delete(row._id);
+    }
+
+    // Activity history.
     const activities = await ctx.db
       .query("activities")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
     for (const a of activities) await ctx.db.delete(a._id);
 
+    // Profile + per-user settings.
     const profile = await ctx.db
       .query("teacherProfiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
