@@ -21,7 +21,7 @@ const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
 const CorrectionsPage = lazy(() => import("./pages/Corrections.tsx"));
 const QuestionPapersPage = lazy(() => import("./pages/QuestionPapers.tsx"));
 const TimetablePage = lazy(() => import("./pages/Timetable.tsx"));
-const ComingSoon = lazy(() => import("./pages/ComingSoon.tsx"));
+const ExamSeatingPage = lazy(() => import("./pages/ExamSeating.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -207,10 +207,15 @@ createRoot(document.getElementById("root")!).render(
                 path="/exam-seating"
                 element={
                   <RequireAuth>
-                    <ComingSoon
-                      title="Exam Seating"
-                      description="Generate exam seating arrangements without the manual shuffle."
-                    />
+                    <ExamSeatingPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/exam-seating/:planId"
+                element={
+                  <RequireAuth>
+                    <ExamSeatingPage />
                   </RequireAuth>
                 }
               />

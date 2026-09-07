@@ -14,6 +14,7 @@ import { useCorrectionSummary } from "@/hooks/use-corrections";
 import { deadlineBucket } from "@/lib/corrections-shared";
 import { useQuestionPaperSummary } from "@/hooks/use-question-papers";
 import { useTimetableSummary } from "@/hooks/use-timetable";
+import { useSeatingSummary } from "@/hooks/use-exam-seating";
 import { formatTime12 } from "@/lib/timetable-shared";
 import {
   attentionScore,
@@ -30,6 +31,7 @@ import {
   Plus,
   Sparkles,
   Sun,
+  Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
@@ -60,6 +62,7 @@ export default function Dashboard() {
   const correctionSummary = useCorrectionSummary();
   const questionPaperSummary = useQuestionPaperSummary();
   const timetableSummary = useTimetableSummary();
+  const seatingSummary = useSeatingSummary();
 
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -416,6 +419,44 @@ export default function Dashboard() {
             )}
           </section>
 
+          {/* Exam seating */}
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-base font-semibold">
+                <Users className="size-4 text-primary" />
+                Exam seating
+                {seatingSummary && seatingSummary.draft + seatingSummary.ready > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {seatingSummary.draft + seatingSummary.ready}
+                  </span>
+                )}
+              </h2>
+              <Link to="/exam-seating" className="text-sm font-medium text-primary">
+                Open seating
+              </Link>
+            </div>
+            {seatingSummary === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : seatingSummary.nextPlan ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-[13px] text-muted-foreground">
+                  Next exam {friendlyDate(seatingSummary.nextPlan.examDate)}
+                  {seatingSummary.nextPlan.room
+                    ? ` · ${seatingSummary.nextPlan.room}`
+                    : ""}
+                </p>
+                <DashboardSeatingRow plan={seatingSummary.nextPlan} />
+              </div>
+            ) : (
+              <div className="card-soft flex items-center gap-3 p-4">
+                <Users className="size-5 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No upcoming seating plans. Create one when an exam is near.
+                </p>
+              </div>
+            )}
+          </section>
+
           {/* Attention */}
           <section className="mb-8">
             <div className="mb-3 flex items-center justify-between">
@@ -753,6 +794,50 @@ function DashboardTimetableRow({
           {entry.room ? ` · ${entry.room}` : ""}
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Compact exam-seating row for the dashboard — the next upcoming plan with
+ * its real assigned/total seat counts.
+ */
+function DashboardSeatingRow({
+  plan,
+}: {
+  plan: {
+    _id: Id<"examSeatingPlans">;
+    title: string;
+    examName: string;
+    examDate: string;
+    room?: string;
+    rows: number;
+    columns: number;
+    assignedCount: number;
+    status: string;
+  };
+}) {
+  const navigate = useNavigate();
+  const cap = plan.rows * plan.columns;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Seating plan: ${plan.title}`}
+      onClick={() => navigate(`/exam-seating/${plan._id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(`/exam-seating/${plan._id}`);
+        }
+      }}
+      className="card-soft card-soft-hover flex w-full cursor-pointer flex-col gap-0.5 p-4 text-left"
+    >
+      <p className="truncate font-medium leading-5">{plan.title}</p>
+      <p className="truncate text-[13px] text-muted-foreground">
+        {plan.examName} · {plan.assignedCount} of {cap} seats filled
+      </p>
     </div>
   );
 }

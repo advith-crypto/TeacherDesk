@@ -193,3 +193,39 @@ export const timetableEntryUpdateValidator = v.object({
   notes: v.optional(v.nullable(v.string())),
 });
 
+// --- Exam Seating (Phase 2E) ---
+
+export const EXAM_SEATING_STATUS_VALUES = ["draft", "ready", "completed"] as const;
+
+export const examSeatingPlanInputValidator = v.object({
+  title: v.string(),
+  examName: v.string(),
+  examDate: v.string(), // "YYYY-MM-DD"
+  startTime: v.optional(v.string()),
+  durationMinutes: v.optional(v.number()),
+  room: v.optional(v.string()),
+  rows: v.number(),
+  columns: v.number(),
+  notes: v.optional(v.string()),
+  status: v.optional(v.string()), // defaults to "draft" on the backend
+});
+
+export const examSeatingPlanUpdateValidator = v.object({
+  title: v.optional(v.string()),
+  examName: v.optional(v.string()),
+  examDate: v.optional(v.string()),
+  startTime: v.optional(v.nullable(v.string())),
+  durationMinutes: v.optional(v.nullable(v.number())),
+  room: v.optional(v.nullable(v.string())),
+  rows: v.optional(v.number()),
+  columns: v.optional(v.number()),
+  notes: v.optional(v.nullable(v.string())),
+  status: v.optional(v.string()),
+});
+
+export const examSeatingAssignmentUpdateValidator = v.object({
+  studentIdentifier: v.optional(v.string()),
+  row: v.optional(v.number()),
+  column: v.optional(v.number()),
+});
+

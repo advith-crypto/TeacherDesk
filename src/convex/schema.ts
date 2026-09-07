@@ -72,7 +72,7 @@ const schema = defineSchema({
   activities: defineTable({
     userId: v.id("users"),
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
-    entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper
+    entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper | timetable | exam_seating
     entityId: v.optional(
       v.union(
         v.id("tasks"),
@@ -80,6 +80,8 @@ const schema = defineSchema({
         v.id("corrections"),
         v.id("questionPapers"),
         v.id("timetableEntries"),
+        v.id("examSeatingPlans"),
+        v.id("examSeatingAssignments"),
       ),
     ),
     summary: v.string(),
@@ -190,6 +192,48 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_day", ["userId", "dayOfWeek"]),
+
+  /**
+   * Exam Seating — Phase 2E. Plans for arranging exam seats. Students exist
+   * only as identifiers inside a plan (no student database). assignedCount is
+   * a derived counter kept in sync by every assignment mutation so list and
+   * dashboard views never need to load full assignment rows.
+   */
+  examSeatingPlans: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    examName: v.string(),
+    examDate: v.string(), // "YYYY-MM-DD"
+    startTime: v.optional(v.string()), // "HH:MM" 24-hour
+    durationMinutes: v.optional(v.number()),
+    room: v.optional(v.string()),
+    rows: v.number(), // positive whole number (1..50)
+    columns: v.number(), // positive whole number (1..50)
+    notes: v.optional(v.string()),
+    status: v.string(), // "draft" | "ready" | "completed"
+    assignedCount: v.number(), // derived, synced atomically by mutations
+    completedAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_date", ["userId", "examDate"])
+    .index("by_user_status", ["userId", "status"]),
+
+  /**
+   * Exam seating assignments — one row per occupied seat. Seats are 1-based
+   * (R1C1..R{rows}C{columns}) to match the visual grid and friendly errors.
+   */
+  examSeatingAssignments: defineTable({
+    userId: v.id("users"),
+    seatingPlanId: v.id("examSeatingPlans"),
+    studentIdentifier: v.string(),
+    row: v.number(), // 1-based
+    column: v.number(), // 1-based
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_seating_plan", ["seatingPlanId"])
+    .index("by_user", ["userId"])
+    .index("by_plan_student", ["seatingPlanId", "studentIdentifier"]),
 });
 
 export default schema;
