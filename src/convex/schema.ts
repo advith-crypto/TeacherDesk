@@ -74,7 +74,13 @@ const schema = defineSchema({
     action: v.string(), // created | updated | completed | reopened | deleted | profile_updated | onboarded
     entityType: v.string(), // task | subtask | profile | account | lesson | correction | question_paper
     entityId: v.optional(
-      v.union(v.id("tasks"), v.id("lessons"), v.id("corrections"), v.id("questionPapers")),
+      v.union(
+        v.id("tasks"),
+        v.id("lessons"),
+        v.id("corrections"),
+        v.id("questionPapers"),
+        v.id("timetableEntries"),
+      ),
     ),
     summary: v.string(),
   }).index("by_user", ["userId"]), // _creationTime ordering is implicit
@@ -165,6 +171,25 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_user_deadline", ["userId", "preparationDeadline"]),
+
+  /**
+   * Timetable — Phase 2D. Weekly teaching periods. dayOfWeek follows the
+   * JS convention: 0 = Sunday .. 6 = Saturday. Times are "HH:MM" (24h).
+   */
+  timetableEntries: defineTable({
+    userId: v.id("users"),
+    dayOfWeek: v.number(), // 0 (Sunday) .. 6 (Saturday)
+    startTime: v.string(), // "HH:MM" 24-hour
+    endTime: v.string(), // "HH:MM" 24-hour
+    subject: v.string(),
+    classGrade: v.string(),
+    section: v.optional(v.string()),
+    room: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_day", ["userId", "dayOfWeek"]),
 });
 
 export default schema;

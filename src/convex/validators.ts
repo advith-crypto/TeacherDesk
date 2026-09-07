@@ -169,3 +169,27 @@ export const questionPaperUpdateValidator = v.object({
   notes: v.optional(v.nullable(v.string())),
 });
 
+// --- Timetable (Phase 2D) ---
+
+export const timetableEntryInputValidator = v.object({
+  dayOfWeek: v.number(),
+  startTime: v.string(),
+  endTime: v.string(),
+  subject: v.string(),
+  classGrade: v.string(),
+  section: v.optional(v.string()),
+  room: v.optional(v.string()),
+  notes: v.optional(v.string()),
+});
+
+export const timetableEntryUpdateValidator = v.object({
+  dayOfWeek: v.optional(v.number()),
+  startTime: v.optional(v.string()),
+  endTime: v.optional(v.string()),
+  subject: v.optional(v.string()),
+  classGrade: v.optional(v.string()),
+  section: v.optional(v.nullable(v.string())),
+  room: v.optional(v.nullable(v.string())),
+  notes: v.optional(v.nullable(v.string())),
+});
+

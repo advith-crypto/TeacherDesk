@@ -20,6 +20,7 @@ const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
 const LessonsPage = lazy(() => import("./pages/Lessons.tsx"));
 const CorrectionsPage = lazy(() => import("./pages/Corrections.tsx"));
 const QuestionPapersPage = lazy(() => import("./pages/QuestionPapers.tsx"));
+const TimetablePage = lazy(() => import("./pages/Timetable.tsx"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon.tsx"));
 
 // Simple loading fallback for route transitions
@@ -198,10 +199,7 @@ createRoot(document.getElementById("root")!).render(
                 path="/timetable"
                 element={
                   <RequireAuth>
-                    <ComingSoon
-                      title="Timetable"
-                      description="Your weekly teaching schedule, built around your working hours."
-                    />
+                    <TimetablePage />
                   </RequireAuth>
                 }
               />

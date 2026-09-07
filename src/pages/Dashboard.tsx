@@ -13,6 +13,8 @@ import { useLessonSummary } from "@/hooks/use-lessons";
 import { useCorrectionSummary } from "@/hooks/use-corrections";
 import { deadlineBucket } from "@/lib/corrections-shared";
 import { useQuestionPaperSummary } from "@/hooks/use-question-papers";
+import { useTimetableSummary } from "@/hooks/use-timetable";
+import { formatTime12 } from "@/lib/timetable-shared";
 import {
   attentionScore,
   attentionReasons,
@@ -57,6 +59,7 @@ export default function Dashboard() {
   const lessonSummary = useLessonSummary();
   const correctionSummary = useCorrectionSummary();
   const questionPaperSummary = useQuestionPaperSummary();
+  const timetableSummary = useTimetableSummary();
 
   const [detailTask, setDetailTask] = useState<TaskItem | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -128,9 +131,15 @@ export default function Dashboard() {
     const qpDueToday = questionPaperSummary?.dueToday ?? 0;
     if (qpDueToday > 0)
       return `${qpDueToday} ${qpDueToday === 1 ? "paper" : "papers"} need finishing today`;
+    const teachingNow = timetableSummary?.current;
+    if (teachingNow)
+      return `You're teaching now — ${teachingNow.subject}, ${teachingNow.classGrade}`;
+    const classesToday = timetableSummary?.todayCount ?? 0;
+    if (classesToday > 0)
+      return `${classesToday} ${classesToday === 1 ? "class" : "classes"} on today's timetable`;
     if (openTasks.length > 0) return "You're on top of things — pick your next task";
     return "Nothing pending. Enjoy the calm!";
-  }, [overdue.length, dueToday.length, lessonSummary, correctionSummary, questionPaperSummary, openTasks.length]);
+  }, [overdue.length, dueToday.length, lessonSummary, correctionSummary, questionPaperSummary, timetableSummary, openTasks.length]);
 
   const openDetail = (t: TaskItem) => {
     setDetailTask(t);
@@ -354,6 +363,55 @@ export default function Dashboard() {
                 {questionPaperSummary.attention.slice(0, 2).map((p) => (
                   <DashboardQuestionPaperRow key={p._id} paper={p} />
                 ))}
+              </div>
+            )}
+          </section>
+
+          {/* Timetable */}
+          <section className="mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-base font-semibold">
+                <CalendarClock className="size-4 text-primary" />
+                Timetable
+                {timetableSummary && timetableSummary.todayCount > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {timetableSummary.todayCount}
+                  </span>
+                )}
+              </h2>
+              <Link to="/timetable" className="text-sm font-medium text-primary">
+                Open timetable
+              </Link>
+            </div>
+            {timetableSummary === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : timetableSummary.total === 0 ? (
+              <div className="card-soft flex items-center gap-3 p-4">
+                <CalendarClock className="size-5 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No periods scheduled yet. Add your teaching schedule to see today's classes.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-[13px] text-muted-foreground">
+                  {timetableSummary.todayCount} {""}
+                  {timetableSummary.todayCount === 1 ? "class" : "classes"} today
+                  {timetableSummary.current
+                    ? " · teaching now"
+                    : timetableSummary.next
+                      ? ` · next at ${formatTime12(timetableSummary.next.startTime)}`
+                      : ""}
+                </p>
+                {timetableSummary.current && (
+                  <DashboardTimetableRow
+                    entry={timetableSummary.current}
+                    chip="Now"
+                  />
+                )}
+                {timetableSummary.next && (
+                  <DashboardTimetableRow entry={timetableSummary.next} chip="Next" />
+                )}
               </div>
             )}
           </section>
@@ -635,6 +693,65 @@ function DashboardCorrectionRow({
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {correction.correctedPapers} / {correction.totalPapers} corrected
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact timetable row for the dashboard — the current or next class today,
+ * computed server-side from the user's schedule and the local clock.
+ */
+function DashboardTimetableRow({
+  entry,
+  chip,
+}: {
+  entry: {
+    _id: Id<"timetableEntries">;
+    startTime: string;
+    endTime: string;
+    subject: string;
+    classGrade: string;
+    section?: string;
+    room?: string;
+  };
+  chip: "Now" | "Next";
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${chip} class: ${entry.subject}, ${entry.classGrade}`}
+      onClick={() => navigate("/timetable")}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate("/timetable");
+        }
+      }}
+      className="card-soft card-soft-hover flex w-full cursor-pointer items-center gap-3 p-4 text-left"
+    >
+      <span
+        className={cn(
+          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold",
+          chip === "Now"
+            ? "bg-primary text-primary-foreground"
+            : "bg-sky-500/15 text-sky-700 dark:text-sky-400",
+        )}
+      >
+        {chip}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium leading-5">
+          {entry.subject} · {entry.classGrade}
+          {entry.section ? ` · ${entry.section}` : ""}
+        </p>
+        <p className="truncate text-[13px] text-muted-foreground">
+          {formatTime12(entry.startTime)} – {formatTime12(entry.endTime)}
+          {entry.room ? ` · ${entry.room}` : ""}
+        </p>
       </div>
     </div>
   );
