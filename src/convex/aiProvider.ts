@@ -153,6 +153,19 @@ async function safeErrorBody(res: Response): Promise<string> {
 }
 
 function providerError(providerName: string, status: number, body: string): string {
+  if (status === 401 || status === 403) {
+    // The gateway is reachable but rejected the deployment's own token — a
+    // platform provisioning issue, not something the end user can fix by
+    // entering a key. Never dump raw gateway JSON into the UI.
+    return (
+      `AI generation is unavailable: the AI service rejected this project's ` +
+      `access token (HTTP ${status}). Enable AI access for this project, then ` +
+      `try again.`
+    );
+  }
+  if (status === 429) {
+    return "AI generation is busy right now (rate limited). Please wait a moment and try again.";
+  }
   const detail = body ? ` — ${body.trim().slice(0, 200)}` : "";
   return `AI provider error (${providerName}, HTTP ${status})${detail}`;
 }
